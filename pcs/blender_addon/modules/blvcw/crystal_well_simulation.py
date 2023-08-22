@@ -3,7 +3,7 @@ import numpy as np
 from blvcw.crystal_well_components import CrystalWellLight, CrystalWellCamera, CrystalWellBuilder, \
     CrystalWellRenderer, CrystalWellWriter, CrystalWellSettings
 from blvcw.crystal_well_simulation_utils import get_random_euler, get_random_translation, get_normal_distributed_values
-from blvcw.crystal_well_distributor import VCWDefaultDistributor, CrystalWellRandomDistributor
+from blvcw.crystal_well_distributor import VCWDefaultDistributor, CrystalWellRandomDistributor, VCWSimpleDistributor
 
 
 class CrystalWellSimulator:
@@ -77,6 +77,14 @@ class CrystalWellSimulator:
                                                      random_translation_function=random_translation_function,
                                                      crystal_well_loader=crystal_well_loader,
                                                      cw_depth=settings["cw_depth"])
+        elif settings["distributor"] == "SIMPLE":
+            self.distributor = VCWSimpleDistributor(total_crystal_area_min=settings["total_crystal_area_min"],
+                                                    total_crystal_area_max=settings["total_crystal_area_max"],
+                                                    res_x=settings["res_x"],
+                                                    res_y=settings["res_y"],
+                                                    random_translation_function=random_translation_function,
+                                                    crystal_well_loader=crystal_well_loader,
+                                                    cw_depth=settings["cw_depth"])
 
         self.crystal_well_loader = crystal_well_loader
         self.builder = CrystalWellBuilder(plane_length=plane_length,
