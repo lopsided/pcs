@@ -28,7 +28,7 @@ class __CrystalWellHeadlessExecution:
         settings_dict = crystal_well_settings.settings_dict
 
         crystal_well_loader = CrystalWellLoader(crystal_object=settings_dict["crystal_object"])
-        if settings_dict["crystal_object"] == "CUSTOM":
+        if settings_dict["crystal_object"] in ["CUSTOM", "CUSTOM_SEQ"]:
             crystal_well_loader.import_obj(settings_dict["crystal_import_path"], clear_material=True)
             crystal_well_loader.set_number_crystal_variants_per_render(
                 number_crystal_variants=settings_dict["number_variants"])

@@ -25,7 +25,7 @@ class WM_OT_VIRTUAL_CRYSTAL_WELL(Operator):
 
         crystal_well_loader = GlobalState.crystal_well_loader
         if crystal_well_loader is None:
-            if vcw.crystal_object == "CUSTOM":
+            if vcw.crystal_object in ["CUSTOM", "CUSTOM_SEQ"]:
                 # Import error
                 return {"CANCELLED"}
             else:

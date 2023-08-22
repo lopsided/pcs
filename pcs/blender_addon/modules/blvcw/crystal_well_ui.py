@@ -75,7 +75,7 @@ class OBJECT_PT_VIRTUAL_CRYSTAL_WELL(Panel):
             col.enabled = False  # Prevent further imports after rendering
         col.label(text="Crystal object:")
         col.prop(vcw, "crystal_object")
-        if vcw.crystal_object == "CUSTOM":
+        if vcw.crystal_object in ["CUSTOM", "CUSTOM_SEQ"]:
             if GlobalState.import_error:
                 col.alert = True
                 col.label(text="Import path error!")

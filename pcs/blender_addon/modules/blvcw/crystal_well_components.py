@@ -20,9 +20,10 @@ class CrystalWellLoader:
         self.number_crystal_variants = 1
         self.crystal_variants = []
         self.n_loaded_crystals = 0
+        self.current_idx = 0
 
     def import_obj(self, import_path="", clear_material=True):
-        if self.crystal_object == "CUSTOM":
+        if self.crystal_object in ["CUSTOM", "CUSTOM_SEQ"]:
             if not os.path.exists(import_path):
                 raise ImportError("The file to import does not exist")
 
@@ -59,12 +60,15 @@ class CrystalWellLoader:
     def setup(self):
         if self.crystal_object == "CUSTOM":
             self.crystal_variants = random.sample(self.imported_crystals, self.number_crystal_variants)
+        elif self.crystal_object == "CUSTOM_SEQ":
+            self.crystal_variants = self.imported_crystals
 
     def load_crystal(self):
         """
         Used to load a crystal from the preloaded collection.
         If a CUSTOM object file is used, the crystal mesh is drawn from self.crystal_variants, which can be
         set in the UI from 0 - #loaded meshes
+        If a CUSTOM_SEQ object file is used, all the meshes in the collection are used in order.
         """
         if self.crystal_object == "CUBE":
             bpy.ops.mesh.primitive_cube_add(size=0.5,
@@ -72,8 +76,12 @@ class CrystalWellLoader:
                                             align="WORLD")
             crystal_cube = bpy.context.active_object
             return crystal_cube
-        elif self.crystal_object == "CUSTOM":
-            crystal = random.choice(self.crystal_variants)
+        elif self.crystal_object in ["CUSTOM", "CUSTOM_SEQ"]:
+            if self.crystal_object == "CUSTOM":
+                crystal = random.choice(self.crystal_variants)
+            else:
+                crystal = self.crystal_variants[self.current_idx]
+                self.current_idx = (self.current_idx + 1) % len(self.crystal_variants)
             new_crystal = crystal.copy()
             new_crystal.data = crystal.data.copy()
             new_crystal.data.name = f"vcw_crystal_mesh_{self.n_loaded_crystals}"

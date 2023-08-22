@@ -177,7 +177,7 @@ class CrystalWellProperties(PropertyGroup):
             GlobalState.crystal_well_loader = None
 
         crystal_well_loader = CrystalWellLoader(crystal_object=self.crystal_object)
-        if self.crystal_object == "CUSTOM":
+        if self.crystal_object in ["CUSTOM", "CUSTOM_SEQ"]:
             try:
                 crystal_well_loader.import_obj(import_path=self.import_path,
                                                clear_material=True)
@@ -195,6 +195,7 @@ class CrystalWellProperties(PropertyGroup):
         description="Choose crystal object",
         items={
             ("CUSTOM", "Custom object", "Import custom .obj file"),
+            ("CUSTOM_SEQ", "Use all in a collection", "Import custom .obj file and render each individually"),
             ("CUBE", "Generic Cube object", "Use a generic cube object for testing"),
         },
         default="CUSTOM",
