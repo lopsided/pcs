@@ -141,13 +141,17 @@ class CrystalWellSimulator:
             self._setup_crystal_well()
             self.crystal_well_loader.setup()
             self.camera.setup()
-            self.light.setup()
+            light_params = self.light.setup()
             self.renderer.setup()
-            segmentations = self.builder.setup()
+            builder_params = self.builder.setup()
             yield True  # Update UI
             if render:
                 image_name = self.renderer.render_image(image_index=i)
-                self.json_writer.write_json(image_name=image_name, polygons=segmentations)
+                self.json_writer.write_json(image_name=image_name,
+                                            polygons=builder_params["annotations"],
+                                            brightnesses=builder_params["brightnesses"],
+                                            iors=builder_params["iors"],
+                                            light_params=light_params)
 
     def _setup_crystal_well(self):
         """

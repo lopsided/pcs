@@ -129,27 +129,41 @@ class CrystalWellLight:
         light_z = self.light_radius_total * math.cos(light_angle) - abs(self.cw_depth)
 
         # TOP-DOWN LIGHT:
+        location = (light_x, light_y, light_z)
+        rotation = (-1 * random_factor_y * light_angle,
+                    random_factor_x * light_angle,
+                    0.0)
+        energy = 10000.0 + np.random.normal(0.0, 1000.0)
         bpy.ops.object.light_add(type=self.light_type,
                                  radius=15,
-                                 location=(light_x, light_y, light_z),
-                                 rotation=(-1 * random_factor_y * light_angle,
-                                           random_factor_x * light_angle,
-                                           0.0))
-
+                                 location=location,
+                                 rotation=rotation)
         bpy.context.object.name = "vcw_" + self.light_type + "_light"
-        bpy.context.object.data.energy = 10000.0 + np.random.normal(0.0, 1000.0)
+        bpy.context.object.data.energy = energy
         bpy.context.object.data.color = (1.0, 1.0, 1.0)
 
         # BOTTOM LIGHT:
         if self.use_bottom_light:
+            energy_bottom = 1000.0 + 500.0 * (random.random() - 0.5)
             bpy.ops.object.light_add(type="AREA",
                                      radius=50,
                                      location=(0, 0, self.cw_depth + 1),
                                      rotation=(math.pi, 0.0, 0.0), )
 
             bpy.context.object.name = "vcw_" + "AREA" + "_light_bottom"
-            bpy.context.object.data.energy = 1000.0 + 500.0 * (random.random() - 0.5)
+            bpy.context.object.data.energy = energy_bottom
             bpy.context.object.data.color = (1.0, 1.0, 1.0)
+
+        params = {
+            "angle": light_angle,
+            "location": (light_x, light_y, light_z),
+            "rotation": rotation,
+            "energy": energy
+        }
+        if self.use_bottom_light:
+            params["energy_bottom"] = energy_bottom
+
+        return params
 
 
 class CrystalWellCamera:
@@ -216,15 +230,23 @@ class CrystalWellBuilder:
         plane.name = "vcw_plane"
 
     def _setup_crystals(self):
+        brightnesses = []
+        iors = []
         number_crystals = 0
         for crystal in self.crystal_distributor.get_crystals():
             self.crystal_material.shuffle_ior_and_brightness()
             self.crystal_material.apply(blender_object=crystal)
+            brightnesses.append(self.crystal_material.properties["ShaderNodeBsdfGlass"]["0"][0])
+            iors.append(self.crystal_material.properties["ShaderNodeBsdfGlass"]["2"])
             number_crystals += 1
 
         print("Generated " + str(number_crystals) + " crystals!")
 
-        return self.crystal_distributor.get_annotations()
+        return {
+            "annotations": self.crystal_distributor.get_annotations(),
+            "brightnesses": brightnesses,
+            "iors": iors
+        }
 
 
 class CrystalWellRenderer:
@@ -278,8 +300,15 @@ class CrystalWellWriter:
     def __init__(self, output_path):
         self.output_path = output_path
 
-    def write_json(self, image_name, polygons):
+    def write_json(self, image_name, polygons,
+                   brightnesses=None, iors=None, light_params=None):
         segmentation = {"segmentation": polygons}
+        if brightnesses is not None:
+            segmentation["brightnesses"] = brightnesses
+        if iors is not None:
+            segmentation["iors"] = iors
+        if light_params is not None:
+            segmentation["light"] = light_params
         json_file_path = os.path.join(self.output_path, image_name + ".json")
         with open(json_file_path, "w") as file:
             json.dump(segmentation, file, indent=None)
