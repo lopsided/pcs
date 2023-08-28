@@ -20,10 +20,7 @@ class CrystalWellSimulator:
         settings = crystal_well_settings.settings_dict
 
         self.name = "CrystalWell"
-        if settings["crystal_object"] == "CUSTOM_SEQ":
-            self.number_of_images = len(crystal_well_loader.imported_crystals)
-        else:
-            self.number_of_images = settings["number_images"]
+        self.number_of_images = settings["number_images"]
         self.crystal_well_loader = crystal_well_loader
 
         gamma = 3. / (((settings["camera_distance"] - settings["cw_depth"]) ** 3) - settings["camera_distance"] ** 3)
