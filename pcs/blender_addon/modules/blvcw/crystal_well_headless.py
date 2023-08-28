@@ -27,7 +27,9 @@ class __CrystalWellHeadlessExecution:
 
         settings_dict = crystal_well_settings.settings_dict
 
-        crystal_well_loader = CrystalWellLoader(crystal_object=settings_dict["crystal_object"])
+        crystal_well_loader = CrystalWellLoader(crystal_object=settings_dict["crystal_object"],
+                                                remesh_mode=settings_dict["remesh_mode"],
+                                                remesh_octree_depth=settings_dict["remesh_octree_depth"])
         if settings_dict["crystal_object"] in ["CUSTOM", "CUSTOM_SEQ"]:
             crystal_well_loader.import_obj(settings_dict["crystal_import_path"], clear_material=True)
             crystal_well_loader.set_number_crystal_variants_per_render(

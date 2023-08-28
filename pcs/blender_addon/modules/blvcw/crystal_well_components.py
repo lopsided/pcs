@@ -13,8 +13,10 @@ class CrystalWellLoader:
     """
     VCW component to import default crystal collections or objects.
     """
-    def __init__(self, crystal_object="CUSTOM"):
+    def __init__(self, crystal_object="CUSTOM", remesh_mode="NONE", remesh_octree_depth=4):
         self.crystal_object = crystal_object
+        self.remesh_mode = remesh_mode
+        self.remesh_octree_depth = remesh_octree_depth
         self.imported_crystals = []
         self.collection_name = "ImportedCrystals"
         self.number_crystal_variants = 1
@@ -86,6 +88,13 @@ class CrystalWellLoader:
             new_crystal.data = crystal.data.copy()
             new_crystal.data.name = f"vcw_crystal_mesh_{self.n_loaded_crystals}"
             new_crystal.name = f"vcw_crystal_{self.n_loaded_crystals}"
+
+            # Remesh using bpy
+            if self.remesh_mode != "NONE":
+                modifier = new_crystal.modifiers.new(name="Remesh", type="REMESH")
+                modifier.mode = self.remesh_mode
+                modifier.octree_depth = self.remesh_octree_depth
+
             self.n_loaded_crystals += 1
             bpy.context.collection.objects.link(new_crystal)
             return new_crystal
@@ -297,6 +306,7 @@ class CrystalWellSettings:
                  crystal_material_name="GLASS", crystal_material_min_ior=1.1, crystal_material_max_ior=1.6,
                  crystal_material_min_brightness=0.75, crystal_material_max_brightness=0.9,
                  light_type="AREA", light_angle_min=0, light_angle_max=0, use_bottom_light=True,
+                 remesh_mode="NONE", remesh_octree_depth=4,
                  number_images=1,
                  ):
         self.settings_dict = {
@@ -335,6 +345,8 @@ class CrystalWellSettings:
             "crystal_import_path": crystal_import_path,
             "number_variants": number_variants,
             "output_path": output_path,
+            "remesh_mode": remesh_mode,
+            "remesh_octree_depth": remesh_octree_depth,
             "number_images": number_images
         }
 
