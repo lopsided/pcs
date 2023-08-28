@@ -282,6 +282,13 @@ class CrystalWellRenderer:
         scene.render.resolution_x = self.res_x
         scene.render.resolution_y = self.res_y
 
+        if self.device == 'GPU':
+            cycles_prefs = bpy.context.preferences.addons["cycles"].preferences
+            cycles_prefs.compute_device_type = "CUDA"
+            cycles_prefs.get_devices()
+            for d in cycles_prefs.devices:
+                d["use"] = 1  # Using all devices, include GPU and CPU
+
     def render_image(self, image_index):
         bpy.context.view_layer.update()
 
