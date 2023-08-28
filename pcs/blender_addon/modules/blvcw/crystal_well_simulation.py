@@ -100,7 +100,8 @@ class CrystalWellSimulator:
                                             number_threads=settings["number_threads"],
                                             res_x=settings["res_x"],
                                             res_y=settings["res_y"],
-                                            output_path=settings["output_path"])
+                                            output_path=settings["output_path"],
+                                            device=settings["device"])
 
         self.json_writer = CrystalWellWriter(output_path=settings["output_path"])
 

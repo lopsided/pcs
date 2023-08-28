@@ -253,19 +253,21 @@ class CrystalWellRenderer:
     """
     VCW component that handles the actual rendering of images. Values for the renderer are hard-coded.
     """
-    def __init__(self, number_frames, number_threads, res_x, res_y, output_path):
+    def __init__(self, number_frames, number_threads, res_x, res_y, output_path, device="CPU"):
         self.number_frames = number_frames
         self.number_threads = number_threads
         self.res_x = res_x
         self.res_y = res_y
         self.output_path = output_path
+        assert device in ["CPU", "GPU"]
+        self.device = device
 
     def setup(self):
         scene = bpy.context.scene
 
         scene.render.engine = "CYCLES"
         scene.render.threads_mode = "FIXED"
-        scene.cycles.device = "CPU"  # GPU
+        scene.cycles.device = self.device
         scene.cycles.samples = 512
         scene.cycles.use_denoising = True
         scene.cycles.max_bounces = 32
@@ -320,7 +322,7 @@ class CrystalWellSettings:
     from the settings_dict.
     """
     def __init__(self,
-                 number_threads=16, n_frames=1,
+                 number_threads=16, device="CPU", n_frames=1,
                  res_x=1024, res_y=1024,
                  field_of_view=1.5708 / 2, camera_distance=15.0, cw_depth=-15.0, output_path="",
                  number_crystals=10, number_crystals_std_dev=0,
@@ -340,6 +342,7 @@ class CrystalWellSettings:
                  ):
         self.settings_dict = {
             "number_threads": number_threads,
+            "device": device,
             "n_frames": n_frames,
             "res_x": res_x,
             "res_y": res_y,
