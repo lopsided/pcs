@@ -30,10 +30,14 @@ class CrystalWellSimulator:
                                                                    sigma=settings["number_crystals_std_dev"],
                                                                    number_values=1)[0]))
 
-        def random_translation_function():
-            return get_random_translation(gamma=gamma,
-                                          camera_distance=settings["camera_distance"],
-                                          field_of_view=settings["field_of_view"])
+        if settings["center_crystals"]:
+            def random_translation_function():
+                return 0, 0, settings["cw_depth"] / 2
+        else:
+            def random_translation_function():
+                return get_random_translation(gamma=gamma,
+                                              camera_distance=settings["camera_distance"],
+                                              field_of_view=settings["field_of_view"])
 
         self.camera = CrystalWellCamera(field_of_view=settings["field_of_view"],
                                         camera_distance=settings["camera_distance"],

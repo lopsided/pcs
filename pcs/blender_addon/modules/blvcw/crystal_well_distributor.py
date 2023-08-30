@@ -605,7 +605,7 @@ class VCWSimpleDistributor(CrystalWellDistributor):
         assert self._in_bounds(crystal, cam_coords)
 
         # Set up parameters and bounds
-        x0 = np.array([scale0,*crystal.location, *crystal.rotation_euler])
+        x0 = np.array([scale0, *crystal.location, *crystal.rotation_euler])
         bounds = [[0, 100],] + [[-100, 100]] * 3 + [[-np.pi, np.pi]] * 3
 
         # Find optimal placement
@@ -631,7 +631,10 @@ class VCWSimpleDistributor(CrystalWellDistributor):
         n_tries = 0
         while n_tries < 50:
             # Initialise the crystal as default
-            translation = self.random_translation_function()
+            if self.random_translation_function is None:
+                translation = (0, 0, self.cw_depth / 2)
+            else:
+                translation = self.random_translation_function()
             crystal.scale = (1, 1, 1)
             crystal.location = Vector((translation[0], translation[1], translation[2]))
             crystal.rotation_euler = (random.random() * math.pi, random.random() * math.pi, 0)
