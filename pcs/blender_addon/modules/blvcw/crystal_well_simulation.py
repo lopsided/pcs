@@ -45,6 +45,9 @@ class CrystalWellSimulator:
         self.light = CrystalWellLight(light_type=settings["light_type"],
                                       light_angle_min=settings["light_angle_min"],
                                       light_angle_max=settings["light_angle_max"],
+                                      light_location=settings["light_location"],
+                                      light_rotation=settings["light_rotation"],
+                                      light_energy=settings["light_energy"],
                                       plane_length=plane_length,
                                       use_bottom_light=settings["use_bottom_light"],
                                       camera_distance=settings["camera_distance"],
@@ -85,7 +88,10 @@ class CrystalWellSimulator:
                                                     res_y=settings["res_y"],
                                                     random_translation_function=random_translation_function,
                                                     crystal_well_loader=crystal_well_loader,
-                                                    cw_depth=settings["cw_depth"])
+                                                    cw_depth=settings["cw_depth"],
+                                                    crystal_location=settings["crystal_location"],
+                                                    crystal_scale=settings["crystal_scale"],
+                                                    crystal_rotation=settings["crystal_rotation"])
 
         self.crystal_well_loader = crystal_well_loader
         self.builder = CrystalWellBuilder(plane_length=plane_length,
@@ -151,6 +157,9 @@ class CrystalWellSimulator:
                 image_name = self.renderer.render_image(image_index=i)
                 self.json_writer.write_json(image_name=image_name,
                                             polygons=builder_params["annotations"],
+                                            locations=builder_params["locations"],
+                                            scales=builder_params["scales"],
+                                            rotations=builder_params["rotations"],
                                             brightnesses=builder_params["brightnesses"],
                                             iors=builder_params["iors"],
                                             light_params=light_params)

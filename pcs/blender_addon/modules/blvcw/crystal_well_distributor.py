@@ -18,6 +18,9 @@ from blvcw.crystal_well_components import CrystalWellLoader
 class CrystalWellDistributor(ABC):
     def __init__(self):
         self.polygons = []
+        self.locations = []
+        self.scales = []
+        self.rotations = []
 
     @abstractmethod
     def get_crystals(self):
@@ -25,6 +28,21 @@ class CrystalWellDistributor(ABC):
 
     def _reset(self):
         self.polygons = []
+        self.locations = []
+        self.scales = []
+        self.rotations = []
+
+    def get_annotations(self):
+        return self.polygons
+
+    def get_locations(self):
+        return self.locations
+
+    def get_scales(self):
+        return self.scales
+
+    def get_rotations(self):
+        return self.rotations
 
 
 class CrystalWellRandomDistributor(CrystalWellDistributor):
@@ -475,7 +493,7 @@ class VCWSimpleDistributor(CrystalWellDistributor):
 
     def __init__(self, total_crystal_area_min=0.05, total_crystal_area_max=0.5, res_x=384, res_y=384,
                  subdivide_edges=10, smooth_shading=True, random_translation_function=None, crystal_well_loader=None,
-                 cw_depth=None):
+                 cw_depth=None, crystal_location=None, crystal_scale=None, crystal_rotation=None):
 
         super().__init__()
 
@@ -494,7 +512,10 @@ class VCWSimpleDistributor(CrystalWellDistributor):
 
         self.cw_depth = cw_depth  # camera data is not supposed to change during distribution of crystals and rendering
 
-        self.polygons = []  # to collect annotations
+        # Used to fix values for validation and testing
+        self.crystal_location = crystal_location
+        self.crystal_scale = crystal_scale
+        self.crystal_rotation = crystal_rotation
 
     def _to_camera_coords(self, crystal):
         # inspired by bpy_extras.object_utils.world_to_camera_view
@@ -626,8 +647,26 @@ class VCWSimpleDistributor(CrystalWellDistributor):
 
 
     def _place_crystal(self, crystal):
-        # requires initial crystals to be centered geometrically
 
+        # Place the crystal at a fixed location, scale and orientation
+        if self.crystal_location is not None:
+            assert len(self.crystal_location) == 3, "crystal_location must be a 3-tuple"
+            crystal.location = Vector(self.crystal_location)
+            if self.crystal_scale is not None:
+                crystal.scale = Vector((self.crystal_scale, self.crystal_scale, self.crystal_scale))
+            if self.crystal_rotation is not None:
+                assert len(self.crystal_rotation) == 3, "crystal_rotation must be a 3-tuple"
+                crystal.rotation_euler = Euler(self.crystal_rotation)
+
+            cam_coords = self._to_camera_coords(crystal)  # Ignore if this is out of bounds
+
+            return crystal, cam_coords
+
+        elif (self.crystal_scale is not None) or (self.crystal_rotation is not None):
+            raise ValueError("crystal_scale and crystal_rotation require crystal_location to be set")
+
+        # Put the crystal in a random location and orientation
+        # (requires initial crystals to be centered geometrically)
         n_tries = 0
         while n_tries < 50:
             # Initialise the crystal as default
@@ -637,7 +676,7 @@ class VCWSimpleDistributor(CrystalWellDistributor):
                 translation = self.random_translation_function()
             crystal.scale = (1, 1, 1)
             crystal.location = Vector((translation[0], translation[1], translation[2]))
-            crystal.rotation_euler = (random.random() * math.pi, random.random() * math.pi, 0)
+            crystal.rotation_euler = (random.random() * math.pi, random.random() * math.pi, random.random() * math.pi)
 
             # Generate a target coverage area
             target_area = random.uniform(self.total_crystal_area_min, self.total_crystal_area_max)
@@ -693,8 +732,9 @@ class VCWSimpleDistributor(CrystalWellDistributor):
             else:
                 print("Successfully placed crystal", crystal.scale, crystal.location)
                 self.polygons.append(cam_coords.tolist())
+                self.locations.append(list(crystal.location))
+                self.scales.append(crystal.scale[0])
+                self.rotations.append(list(crystal.rotation_euler))
                 solved_crystal = self._postprocessing(solved_crystal)
                 yield solved_crystal
 
-    def get_annotations(self):
-        return self.polygons

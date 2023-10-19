@@ -111,11 +111,15 @@ class CrystalWellLight:
     generate good images.
     """
     def __init__(self, light_type="AREA", light_angle_min=0, light_angle_max=0,
+                 light_location=None, light_rotation=None, light_energy=None,
                  plane_length=15.0, use_bottom_light=True,
                  camera_distance=15.0, cw_depth=-10.0):
         self.light_type = light_type
         self.light_angle_min = light_angle_min
         self.light_angle_max = light_angle_max
+        self.light_location = light_location
+        self.light_rotation = light_rotation
+        self.light_energy = light_energy
         self.plane_length = plane_length
         self.use_bottom_light = use_bottom_light
         self.cw_depth = cw_depth
@@ -123,17 +127,29 @@ class CrystalWellLight:
 
     def setup(self):
         light_angle = np.deg2rad(np.random.uniform(self.light_angle_min, self.light_angle_max))
-        random_factor_x, random_factor_y = (np.random.choice([-1, 1]), np.random.choice([-1, 1]))
-        light_x = self.light_radius_total * math.sin(light_angle) * random_factor_x
-        light_y = self.light_radius_total * math.sin(light_angle) * random_factor_y
-        light_z = self.light_radius_total * math.cos(light_angle) - abs(self.cw_depth)
+
+        if self.light_location is not None:
+            assert len(self.light_location) == 3, "light_location must be a tuple of length 3"
+            assert self.light_rotation is not None, "light_rotation must be set if light_location is set"
+            assert len(self.light_rotation) == 3, "light_rotation must be a tuple of length 3"
+            light_x, light_y, light_z = self.light_location
+            rotation = self.light_rotation
+        else:
+            random_factor_x, random_factor_y = (np.random.choice([-1, 1]), np.random.choice([-1, 1]))
+            light_x = self.light_radius_total * math.sin(light_angle) * random_factor_x
+            light_y = self.light_radius_total * math.sin(light_angle) * random_factor_y
+            light_z = self.light_radius_total * math.cos(light_angle) - abs(self.cw_depth)
+            rotation = (-1 * random_factor_y * light_angle,
+                        random_factor_x * light_angle,
+                        0.0)
 
         # TOP-DOWN LIGHT:
         location = (light_x, light_y, light_z)
-        rotation = (-1 * random_factor_y * light_angle,
-                    random_factor_x * light_angle,
-                    0.0)
-        energy = 10000.0 + np.random.normal(0.0, 1000.0)
+
+        if self.light_energy is not None:
+            energy = self.light_energy
+        else:
+            energy = 10000.0 + np.random.normal(0.0, 1000.0)
         bpy.ops.object.light_add(type=self.light_type,
                                  radius=15,
                                  location=location,
@@ -244,6 +260,9 @@ class CrystalWellBuilder:
 
         return {
             "annotations": self.crystal_distributor.get_annotations(),
+            "locations": self.crystal_distributor.get_locations(),
+            "scales": self.crystal_distributor.get_scales(),
+            "rotations": self.crystal_distributor.get_rotations(),
             "brightnesses": brightnesses,
             "iors": iors
         }
@@ -309,18 +328,24 @@ class CrystalWellWriter:
     def __init__(self, output_path):
         self.output_path = output_path
 
-    def write_json(self, image_name, polygons,
+    def write_json(self, image_name, polygons, locations, scales, rotations,
                    brightnesses=None, iors=None, light_params=None):
-        segmentation = {"segmentation": polygons}
-        if brightnesses is not None:
-            segmentation["brightnesses"] = brightnesses
-        if iors is not None:
-            segmentation["iors"] = iors
-        if light_params is not None:
-            segmentation["light"] = light_params
+        data = {
+            "segmentation": polygons,
+            "crystals": {
+                "locations": locations,
+                "scales": scales,
+                "rotations": rotations
+            },
+            "materials": {
+                "brightnesses": brightnesses,
+                "iors": iors
+            },
+            "light": light_params
+        }
         json_file_path = os.path.join(self.output_path, image_name + ".json")
         with open(json_file_path, "w") as file:
-            json.dump(segmentation, file, indent=None)
+            json.dump(data, file, indent=None)
 
 
 class CrystalWellSettings:
@@ -334,6 +359,7 @@ class CrystalWellSettings:
                  field_of_view=1.5708 / 2, camera_distance=15.0, cw_depth=-15.0, output_path="",
                  number_crystals=10, number_crystals_std_dev=0,
                  distributor="DEFAULT", center_crystals=True,
+                 crystal_location=None, crystal_scale=None, crystal_rotation=None,
                  total_crystal_area_min=0.05, total_crystal_area_max=0.5,
                  crystal_area_min=3**2, crystal_area_max=128**2,
                  crystal_edge_min=3, crystal_edge_max=384,
@@ -344,6 +370,7 @@ class CrystalWellSettings:
                  crystal_material_name="GLASS", crystal_material_min_ior=1.1, crystal_material_max_ior=1.6,
                  crystal_material_min_brightness=0.75, crystal_material_max_brightness=0.9,
                  light_type="AREA", light_angle_min=0, light_angle_max=0, use_bottom_light=True,
+                 light_location=None, light_rotation=None, light_energy=None,
                  remesh_mode="NONE", remesh_octree_depth=4,
                  number_images=1,
                  ):
@@ -360,6 +387,9 @@ class CrystalWellSettings:
             "number_crystals_std_dev": number_crystals_std_dev,
             "distributor": distributor,
             "center_crystals": center_crystals,
+            "crystal_location": crystal_location,
+            "crystal_scale": crystal_scale,
+            "crystal_rotation": crystal_rotation,
             "total_crystal_area_min": total_crystal_area_min,
             "total_crystal_area_max": total_crystal_area_max,
             "crystal_area_min": crystal_area_min,
@@ -380,6 +410,9 @@ class CrystalWellSettings:
             "light_type": light_type,
             "light_angle_min": light_angle_min,
             "light_angle_max": light_angle_max,
+            "light_location": light_location,
+            "light_rotation": light_rotation,
+            "light_energy": light_energy,
             "use_bottom_light": use_bottom_light,
             "crystal_object": crystal_object,
             "crystal_import_path": crystal_import_path,
