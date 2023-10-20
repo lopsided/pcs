@@ -1,7 +1,7 @@
 import bpy
 import random
 from abc import ABC, abstractmethod
-
+import blvcw.custom_materials as custom
 
 class _CrystalMaterial(ABC):
     """
@@ -11,7 +11,12 @@ class _CrystalMaterial(ABC):
     def __init__(self, material_name):
         self.material_name = material_name
         self.base_name = material_name
-        self.properties, self.color_ramp, self.links = MaterialsContainer.get_material(name=material_name)
+        if material_name in ['CrystalMaterialCUSTOM']:
+            # load custom material
+            self.material_loader = custom.material_loader()
+            self.properties, self.color_ramp, self.links = [], [], []
+        else:
+            self.properties, self.color_ramp, self.links = MaterialsContainer.get_material(name=material_name)
         self.shuffle = MaterialsContainer.get_shuffle(name=material_name)
         self.material = None
         self.number = 0
@@ -34,45 +39,50 @@ class _CrystalMaterial(ABC):
         and setting the according values
         """
         if self.material_name not in bpy.data.materials:
-            self.material = bpy.data.materials.new(self.material_name)
-            self.material.use_nodes = True
+            print("material_name",self.material_name)
+            if self.material_name in ['CrystalMaterialCUSTOM']:
+                self.material = self.material_loader.load()
+                print("self.material",self.material)
+            else:
+                self.material = bpy.data.materials.new(self.material_name)
+                self.material.use_nodes = True
 
-            if "Principled BSDF" not in self.properties.keys():
-                principled_bsdf_to_delete = self.material.node_tree.nodes["Principled BSDF"]
-                self.material.node_tree.nodes.remove(principled_bsdf_to_delete)
+                if "Principled BSDF" not in self.properties.keys():
+                    principled_bsdf_to_delete = self.material.node_tree.nodes["Principled BSDF"]
+                    self.material.node_tree.nodes.remove(principled_bsdf_to_delete)
 
-            for node_name, node_properties in self.properties.items():
-                if node_name in self.material.node_tree.nodes:
-                    node = self.material.node_tree.nodes.get(node_name)
-                else:
-                    node = self.material.node_tree.nodes.new(node_name)
-
-                for input_key, value in node_properties.items():
-                    if input_key == "distribution":
-                        node.distribution = value
+                for node_name, node_properties in self.properties.items():
+                    if node_name in self.material.node_tree.nodes:
+                        node = self.material.node_tree.nodes.get(node_name)
                     else:
-                        node.inputs[int(input_key)].default_value = value
+                        node = self.material.node_tree.nodes.new(node_name)
 
-            for color_ramp, node_properties in self.color_ramp.items():
-                if color_ramp in self.material.node_tree.nodes:
-                    node = self.material.node_tree.nodes.get(color_ramp)
-                else:
-                    node = self.material.node_tree.nodes.new(color_ramp)
-                for element_key, value in node_properties.items():
-                    setattr(node.color_ramp.elements[0], element_key, value)
+                    for input_key, value in node_properties.items():
+                        if input_key == "distribution":
+                            node.distribution = value
+                        else:
+                            node.inputs[int(input_key)].default_value = value
 
-            for node_name_left, link_properties in self.links.items():
-                if link_properties["type"] == "overwrite":
+                for color_ramp, node_properties in self.color_ramp.items():
+                    if color_ramp in self.material.node_tree.nodes:
+                        node = self.material.node_tree.nodes.get(color_ramp)
+                    else:
+                        node = self.material.node_tree.nodes.new(color_ramp)
+                    for element_key, value in node_properties.items():
+                        setattr(node.color_ramp.elements[0], element_key, value)
+
+                for node_name_left, link_properties in self.links.items():
+                    if link_properties["type"] == "overwrite":
+                        node_left = self.material.node_tree.nodes.get(node_name_left)
+                        for link in node_left.outputs[0].links:
+                            self.material.node_tree.links.remove(link)
+
+                    link = self.material.node_tree.links.new
+
                     node_left = self.material.node_tree.nodes.get(node_name_left)
-                    for link in node_left.outputs[0].links:
-                        self.material.node_tree.links.remove(link)
-
-                link = self.material.node_tree.links.new
-
-                node_left = self.material.node_tree.nodes.get(node_name_left)
-                node_right = self.material.node_tree.nodes.get(link_properties["link_target"])
-                link(node_left.outputs[link_properties["link_start_output"]],
-                     node_right.inputs[link_properties["link_target_input"]])
+                    node_right = self.material.node_tree.nodes.get(link_properties["link_target"])
+                    link(node_left.outputs[link_properties["link_start_output"]],
+                        node_right.inputs[link_properties["link_target_input"]])
 
         else:
             self.material = bpy.data.materials[self.material_name]
@@ -126,6 +136,41 @@ class PlaneMaterial(_CrystalMaterial):
         self._duplicate_with_new_number()
     """
 
+class CustomMaterial(_CrystalMaterial):
+    def __init__(self, material_name="CUSTOM", min_ior=1.1, max_ior=1.6, min_brightness=0.75, max_brightness=0.9):
+        material_name = "CrystalMaterial" + material_name
+        self.min_ior = min_ior
+        self.max_ior = max_ior
+        self.min_brightness = min_brightness
+        self.max_brightness = max_brightness
+        super().__init__(material_name=material_name)
+
+    def shuffle_ior_and_brightness(self):
+        """
+        Draws a new value for ior between self.min_ior and self.max_ior.
+        Also draws a new value for brightness between self.min_brightness and self.max_brightness.
+        Brightness is set by manipulating the color value of the Glass BSDF Node.
+        """
+        if self.shuffle:
+            ior = random.uniform(self.min_ior, self.max_ior)
+            brightness = random.uniform(self.min_brightness, self.max_brightness)
+            if "ShaderNodeBsdfGlass" in self.properties.keys():
+                self.properties["ShaderNodeBsdfGlass"]["0"] = (brightness, brightness, brightness, 1)
+                self.properties["ShaderNodeBsdfGlass"]["1"] = 0  # roughness
+                self.properties["ShaderNodeBsdfGlass"]["2"] = ior
+                self._duplicate_with_new_number()
+
+    """
+    def shuffle_roughness(self):
+        roughness = random.uniform(0.15, 0.65)
+        if "ShaderNodeBsdfGlass" in self.properties.keys():
+            self.properties["ShaderNodeBsdfGlass"]["1"] = roughness
+            self._duplicate_with_new_number()
+        elif "Principled BSDF" in self.properties.keys():
+            self.properties["Principled BSDF"]["7"] = roughness
+            self._duplicate_with_new_number()
+    """
+
 
 class MaterialsContainer:
     """
@@ -136,7 +181,7 @@ class MaterialsContainer:
     """
     @staticmethod
     def get_shuffle(name):
-        if name in ["CrystalMaterialGLASS"]:
+        if name in ["CrystalMaterialGLASS"]:#,"CrystalMaterialCUSTOM"]:
             return True
         else:
             return False
@@ -334,5 +379,22 @@ class MaterialsContainer:
                     "link_target_input": 0
                 },
             }
-
+        elif name == "CrystalMaterialCUSTOM":
+            properties = {
+                "ShaderNodeBsdfGlass": {
+                    "distribution": "BECKMANN",
+                    "0": (1.0, 1.0, 1.0, 1.0),  # Color
+                    "1": 0.3,  # Roughness
+                    "2": 1.1  # IOR (default = 1.050)
+                },
+            }
+            color_ramp = {}
+            links = {
+                "Glass BSDF": {
+                    "type": "new",
+                    "link_start_output": 0,
+                    "link_target": "Material Output",
+                    "link_target_input": 0
+                },
+            }
         return properties, color_ramp, links

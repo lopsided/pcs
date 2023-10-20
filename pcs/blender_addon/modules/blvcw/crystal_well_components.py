@@ -6,7 +6,7 @@ import random
 
 import numpy as np
 from types import SimpleNamespace
-from blvcw.crystal_well_material import CrystalMaterialGlass, PlaneMaterial
+from blvcw.crystal_well_material import CrystalMaterialGlass, PlaneMaterial, CustomMaterial
 
 
 class CrystalWellLoader:
@@ -225,8 +225,14 @@ class CrystalWellBuilder:
             self.crystal_material = SimpleNamespace(apply=lambda blender_object: blender_object.data.materials.clear(),
                                                     shuffle_ior_and_brightness=lambda *args: None,
                                                     shuffle_roughness=lambda *args: None)
-        else:
+        elif material_name == 'GLASS':
             self.crystal_material = CrystalMaterialGlass(material_name=material_name,
+                                                         min_ior=material_min_ior,
+                                                         max_ior=material_max_ior,
+                                                         min_brightness=material_min_brightness,
+                                                         max_brightness=material_max_brightness)
+        else:
+            self.crystal_material = CustomMaterial(material_name=material_name,
                                                          min_ior=material_min_ior,
                                                          max_ior=material_max_ior,
                                                          min_brightness=material_min_brightness,
@@ -252,8 +258,14 @@ class CrystalWellBuilder:
         for crystal in self.crystal_distributor.get_crystals():
             self.crystal_material.shuffle_ior_and_brightness()
             self.crystal_material.apply(blender_object=crystal)
-            brightnesses.append(self.crystal_material.properties["ShaderNodeBsdfGlass"]["0"][0])
-            iors.append(self.crystal_material.properties["ShaderNodeBsdfGlass"]["2"])
+            print("self.crystal_material.material_name",self.crystal_material.material_name)
+            if self.crystal_material.material_name in ['CrystalMaterialCUSTOM']:
+                # these need fixing if important!
+                brightnesses.append(0)
+                iors.append(0)
+            else:
+                brightnesses.append(self.crystal_material.properties["ShaderNodeBsdfGlass"]["0"][0])
+                iors.append(self.crystal_material.properties["ShaderNodeBsdfGlass"]["2"])
             number_crystals += 1
 
         print("Generated " + str(number_crystals) + " crystals!")

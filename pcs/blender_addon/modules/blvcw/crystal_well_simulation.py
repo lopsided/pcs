@@ -45,9 +45,9 @@ class CrystalWellSimulator:
         self.light = CrystalWellLight(light_type=settings["light_type"],
                                       light_angle_min=settings["light_angle_min"],
                                       light_angle_max=settings["light_angle_max"],
-                                      light_location=settings["light_location"],
-                                      light_rotation=settings["light_rotation"],
-                                      light_energy=settings["light_energy"],
+                                    #   light_location=settings["light_location"],
+                                    #   light_rotation=settings["light_rotation"],
+                                    #   light_energy=settings["light_energy"],
                                       plane_length=plane_length,
                                       use_bottom_light=settings["use_bottom_light"],
                                       camera_distance=settings["camera_distance"],
@@ -89,9 +89,10 @@ class CrystalWellSimulator:
                                                     random_translation_function=random_translation_function,
                                                     crystal_well_loader=crystal_well_loader,
                                                     cw_depth=settings["cw_depth"],
-                                                    crystal_location=settings["crystal_location"],
-                                                    crystal_scale=settings["crystal_scale"],
-                                                    crystal_rotation=settings["crystal_rotation"])
+                                                    # crystal_location=settings["crystal_location"],
+                                                    # crystal_scale=settings["crystal_scale"],
+                                                    # crystal_rotation=settings["crystal_rotation"]
+                                                    )
 
         self.crystal_well_loader = crystal_well_loader
         self.builder = CrystalWellBuilder(plane_length=plane_length,
