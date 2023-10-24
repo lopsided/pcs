@@ -618,7 +618,7 @@ class VCWSimpleDistributor(CrystalWellDistributor):
             else:
                 scale0 *= 0.9
                 crystal.scale = (scale0, scale0, scale0)
-                crystal.location = (crystal.location[0] * 0.9, crystal.location[1] * 0.9, crystal.location[2] * 0.9)
+                crystal.location = (crystal.location[0] * 0.8, crystal.location[1] * 0.8, crystal.location[2])
                 n_fails += 1
                 if n_fails > 100:
                     return None
@@ -627,7 +627,7 @@ class VCWSimpleDistributor(CrystalWellDistributor):
 
         # Set up parameters and bounds
         x0 = np.array([scale0, *crystal.location, *crystal.rotation_euler])
-        bounds = [[0, 100],] + [[-100, 100]] * 3 + [[-np.pi, np.pi]] * 3
+        bounds = [[0, 100],] + [[-100, 100]] * 3 + [[0, 2 * np.pi]] * 3
 
         # Find optimal placement
         res = minimize(
@@ -676,7 +676,7 @@ class VCWSimpleDistributor(CrystalWellDistributor):
                 translation = self.random_translation_function()
             crystal.scale = (1, 1, 1)
             crystal.location = Vector((translation[0], translation[1], translation[2]))
-            crystal.rotation_euler = (random.random() * math.pi, random.random() * math.pi, random.random() * math.pi)
+            crystal.rotation_euler = (random.random() * 2 * math.pi, random.random() * 2 * math.pi, random.random() * 2 * math.pi)
 
             # Generate a target coverage area
             target_area = random.uniform(self.total_crystal_area_min, self.total_crystal_area_max)
