@@ -1,3 +1,4 @@
+import sys
 import bpy
 import bpy_extras
 import math
@@ -608,7 +609,7 @@ class VCWSimpleDistributor(CrystalWellDistributor):
         area = width * height / self.image_area
         scale0 = target_area / area
 
-        # Ensure the initial guess falls in the bounds by scaling it and translating it until it must
+        # Ensure the initial guess falls in the bounds by scaling and translating it until it must
         oob = True
         n_fails = 0
         while oob:
@@ -637,11 +638,11 @@ class VCWSimpleDistributor(CrystalWellDistributor):
             bounds=bounds,
             method='COBYLA',
             options={
-                'maxiter': 500,
+                'maxiter': 1000,
             }
         )
 
-        if res.success and res.fun < 1e-4:
+        if res.success and res.fun < 1e-3:
             return res.x
         return None
 
@@ -668,7 +669,7 @@ class VCWSimpleDistributor(CrystalWellDistributor):
         # Put the crystal in a random location and orientation
         # (requires initial crystals to be centered geometrically)
         n_tries = 0
-        while n_tries < 50:
+        while n_tries < 10000:
             # Initialise the crystal as default
             if self.random_translation_function is None:
                 translation = (0, 0, self.cw_depth / 2)
@@ -724,17 +725,12 @@ class VCWSimpleDistributor(CrystalWellDistributor):
             crystal = self.crystal_well_loader.load_crystal()
             solved_crystal, cam_coords = self._place_crystal(crystal)
             if solved_crystal is None or cam_coords is None:
-                # unsuccessful in placing the crystal in the current scene under the given constraints
-                # try again with a different target shape
-                # should be avoided since this distorts the target distributions in the final dataset.
-                print("WARNING: Unable to place crystal within target")
-                bpy.data.objects.remove(crystal)
-            else:
-                print("Successfully placed crystal", crystal.scale, crystal.location)
-                self.polygons.append(cam_coords.tolist())
-                self.locations.append(list(crystal.location))
-                self.scales.append(crystal.scale[0])
-                self.rotations.append(list(crystal.rotation_euler))
-                solved_crystal = self._postprocessing(solved_crystal)
-                yield solved_crystal
+                raise RuntimeError("Unable to place crystal within target")
+            print("Successfully placed crystal", crystal.scale, crystal.location)
+            self.polygons.append(cam_coords.tolist())
+            self.locations.append(list(crystal.location))
+            self.scales.append(crystal.scale[0])
+            self.rotations.append(list(crystal.rotation_euler))
+            solved_crystal = self._postprocessing(solved_crystal)
+            yield solved_crystal
 
