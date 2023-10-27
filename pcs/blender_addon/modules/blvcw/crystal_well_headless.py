@@ -60,6 +60,15 @@ elif not os.path.exists(settings_file):  # Path not found
     print("ERROR: SETTINGS FILE NOT FOUND")
     exit(1)
 
+if "--seed" in argv:
+    seed = int(argv[argv.index("--seed") + 1])
+    print("Setting seed to:", seed, file=sys.stderr)
+    import random
+    import numpy as np
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+
 crystal_well_headless = __CrystalWellHeadlessExecution(settings_file_path=settings_file)
 crystal_well_headless.perform_headless_execution()
 exit(0)
