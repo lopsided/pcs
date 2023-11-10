@@ -529,9 +529,9 @@ class VCWSimpleDistributor(CrystalWellDistributor):
             co_frames = []
             for v in self.frame:
                 if co.z == 0:
-                    co_frames.append(0)
+                    co_frames.append(-v * 0)
                 elif v.z == 0:
-                    co_frames.append(1e8)
+                    co_frames.append(-v * 1e8)
                 else:
                     co_frames.append(-(v / (v.z / -co.z)))
             frames.append(co_frames)
@@ -539,8 +539,8 @@ class VCWSimpleDistributor(CrystalWellDistributor):
         min_xs, max_xs = [f[2].x for f in frames], [f[1].x for f in frames]
         min_ys, max_ys = [f[1].y for f in frames], [f[0].y for f in frames]
 
-        xs = [(co.x - min_x) / (max_x - min_x) for co, min_x, max_x in zip(co_local, min_xs, max_xs)]
-        ys = [(co.y - min_y) / (max_y - min_y) for co, min_y, max_y in zip(co_local, min_ys, max_ys)]
+        xs = [(co.x - min_x) / (max_x - min_x + 1e-8) for co, min_x, max_x in zip(co_local, min_xs, max_xs)]
+        ys = [(co.y - min_y) / (max_y - min_y + 1e-8) for co, min_y, max_y in zip(co_local, min_ys, max_ys)]
 
         res1 = np.array([[x * self.res_x, y * self.res_y, -co.z] for x, y, co in zip(xs, ys, co_local)], dtype=np.float32)
 
@@ -619,7 +619,7 @@ class VCWSimpleDistributor(CrystalWellDistributor):
         # scale estimation
         width, height, _ = self._get_min_area_rect(crystal)
         area = width * height / self.image_area
-        scale0 = target_area / area
+        scale0 = target_area / (area + 1e-8)
 
         # Ensure the initial guess falls in the bounds by scaling and translating it until it must
         oob = True
