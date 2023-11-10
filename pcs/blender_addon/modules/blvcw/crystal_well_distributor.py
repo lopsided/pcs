@@ -522,7 +522,19 @@ class VCWSimpleDistributor(CrystalWellDistributor):
         # inspired by bpy_extras.object_utils.world_to_camera_view
         bpy.context.view_layer.update()
         co_local = [self.inv_mat @ (crystal.matrix_world @ v.co) for v in crystal.data.vertices]
-        frames = [[-(v / (v.z / -co.z)) for v in self.frame] for co in co_local]
+        # frames = [[-(v / (v.z / -co.z)) for v in self.frame] for co in co_local]
+        # Expanded the list comprehension to account for division by zero errors
+        frames = []
+        for co in co_local:
+            co_frames = []
+            for v in self.frame:
+                if co.z == 0:
+                    co_frames.append(0)
+                elif v.z == 0:
+                    co_frames.append(1e8)
+                else:
+                    co_frames.append(-(v / (v.z / -co.z)))
+            frames.append(co_frames)
 
         min_xs, max_xs = [f[2].x for f in frames], [f[1].x for f in frames]
         min_ys, max_ys = [f[1].y for f in frames], [f[0].y for f in frames]
