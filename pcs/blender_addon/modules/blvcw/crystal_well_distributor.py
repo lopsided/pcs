@@ -1,3 +1,4 @@
+import sys
 import bpy
 import bpy_extras
 import math
@@ -521,13 +522,25 @@ class VCWSimpleDistributor(CrystalWellDistributor):
         # inspired by bpy_extras.object_utils.world_to_camera_view
         bpy.context.view_layer.update()
         co_local = [self.inv_mat @ (crystal.matrix_world @ v.co) for v in crystal.data.vertices]
-        frames = [[-(v / (v.z / -co.z)) for v in self.frame] for co in co_local]
+        # frames = [[-(v / (v.z / -co.z)) for v in self.frame] for co in co_local]
+        # Expanded the list comprehension to account for division by zero errors
+        frames = []
+        for co in co_local:
+            co_frames = []
+            for v in self.frame:
+                if co.z == 0:
+                    co_frames.append(-v * 0)
+                elif v.z == 0:
+                    co_frames.append(-v * 1e8)
+                else:
+                    co_frames.append(-(v / (v.z / -co.z)))
+            frames.append(co_frames)
 
         min_xs, max_xs = [f[2].x for f in frames], [f[1].x for f in frames]
         min_ys, max_ys = [f[1].y for f in frames], [f[0].y for f in frames]
 
-        xs = [(co.x - min_x) / (max_x - min_x) for co, min_x, max_x in zip(co_local, min_xs, max_xs)]
-        ys = [(co.y - min_y) / (max_y - min_y) for co, min_y, max_y in zip(co_local, min_ys, max_ys)]
+        xs = [(co.x - min_x) / (max_x - min_x + 1e-8) for co, min_x, max_x in zip(co_local, min_xs, max_xs)]
+        ys = [(co.y - min_y) / (max_y - min_y + 1e-8) for co, min_y, max_y in zip(co_local, min_ys, max_ys)]
 
         res1 = np.array([[x * self.res_x, y * self.res_y, -co.z] for x, y, co in zip(xs, ys, co_local)], dtype=np.float32)
 
@@ -606,9 +619,9 @@ class VCWSimpleDistributor(CrystalWellDistributor):
         # scale estimation
         width, height, _ = self._get_min_area_rect(crystal)
         area = width * height / self.image_area
-        scale0 = target_area / area
+        scale0 = target_area / (area + 1e-8)
 
-        # Ensure the initial guess falls in the bounds by scaling it and translating it until it must
+        # Ensure the initial guess falls in the bounds by scaling and translating it until it must
         oob = True
         n_fails = 0
         while oob:
@@ -618,7 +631,7 @@ class VCWSimpleDistributor(CrystalWellDistributor):
             else:
                 scale0 *= 0.9
                 crystal.scale = (scale0, scale0, scale0)
-                crystal.location = (crystal.location[0] * 0.9, crystal.location[1] * 0.9, crystal.location[2] * 0.9)
+                crystal.location = (crystal.location[0] * 0.8, crystal.location[1] * 0.8, crystal.location[2])
                 n_fails += 1
                 if n_fails > 100:
                     return None
@@ -627,7 +640,7 @@ class VCWSimpleDistributor(CrystalWellDistributor):
 
         # Set up parameters and bounds
         x0 = np.array([scale0, *crystal.location, *crystal.rotation_euler])
-        bounds = [[0, 100],] + [[-100, 100]] * 3 + [[-np.pi, np.pi]] * 3
+        bounds = [[0, 100],] + [[-100, 100]] * 3 + [[0, 2 * np.pi]] * 3
 
         # Find optimal placement
         res = minimize(
@@ -637,11 +650,11 @@ class VCWSimpleDistributor(CrystalWellDistributor):
             bounds=bounds,
             method='COBYLA',
             options={
-                'maxiter': 500,
+                'maxiter': 1000,
             }
         )
 
-        if res.success and res.fun < 1e-4:
+        if res.success and res.fun < 1e-3:
             return res.x
         return None
 
@@ -668,7 +681,7 @@ class VCWSimpleDistributor(CrystalWellDistributor):
         # Put the crystal in a random location and orientation
         # (requires initial crystals to be centered geometrically)
         n_tries = 0
-        while n_tries < 50:
+        while n_tries < 10000:
             # Initialise the crystal as default
             if self.random_translation_function is None:
                 translation = (0, 0, self.cw_depth / 2)
@@ -676,7 +689,7 @@ class VCWSimpleDistributor(CrystalWellDistributor):
                 translation = self.random_translation_function()
             crystal.scale = (1, 1, 1)
             crystal.location = Vector((translation[0], translation[1], translation[2]))
-            crystal.rotation_euler = (random.random() * math.pi, random.random() * math.pi, random.random() * math.pi)
+            crystal.rotation_euler = (random.random() * 2 * math.pi, random.random() * 2 * math.pi, random.random() * 2 * math.pi)
 
             # Generate a target coverage area
             target_area = random.uniform(self.total_crystal_area_min, self.total_crystal_area_max)
@@ -724,17 +737,12 @@ class VCWSimpleDistributor(CrystalWellDistributor):
             crystal = self.crystal_well_loader.load_crystal()
             solved_crystal, cam_coords = self._place_crystal(crystal)
             if solved_crystal is None or cam_coords is None:
-                # unsuccessful in placing the crystal in the current scene under the given constraints
-                # try again with a different target shape
-                # should be avoided since this distorts the target distributions in the final dataset.
-                print("WARNING: Unable to place crystal within target")
-                bpy.data.objects.remove(crystal)
-            else:
-                print("Successfully placed crystal", crystal.scale, crystal.location)
-                self.polygons.append(cam_coords.tolist())
-                self.locations.append(list(crystal.location))
-                self.scales.append(crystal.scale[0])
-                self.rotations.append(list(crystal.rotation_euler))
-                solved_crystal = self._postprocessing(solved_crystal)
-                yield solved_crystal
+                raise RuntimeError("Unable to place crystal within target")
+            print("Successfully placed crystal", crystal.scale, crystal.location)
+            self.polygons.append(cam_coords.tolist())
+            self.locations.append(list(crystal.location))
+            self.scales.append(crystal.scale[0])
+            self.rotations.append(list(crystal.rotation_euler))
+            solved_crystal = self._postprocessing(solved_crystal)
+            yield solved_crystal
 
