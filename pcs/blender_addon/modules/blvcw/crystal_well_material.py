@@ -8,12 +8,12 @@ class _CrystalMaterial(ABC):
     Abstract class to handle different classes of material (Crystal / Plane).
     """
     @abstractmethod
-    def __init__(self, material_name):
+    def __init__(self, material_name,custom_material="default"):
         self.material_name = material_name
         self.base_name = material_name
         if material_name in ['CrystalMaterialCUSTOM']:
             # load custom material
-            self.material_loader = custom.material_loader()
+            self.material_loader = custom.material_loader(custom_material)
             self.properties, self.color_ramp, self.links = [], [], []
         else:
             self.properties, self.color_ramp, self.links = MaterialsContainer.get_material(name=material_name)
@@ -137,13 +137,14 @@ class PlaneMaterial(_CrystalMaterial):
     """
 
 class CustomMaterial(_CrystalMaterial):
-    def __init__(self, material_name="CUSTOM", min_ior=1.1, max_ior=1.6, min_brightness=0.75, max_brightness=0.9):
+    def __init__(self, material_name="CUSTOM", min_ior=1.1, max_ior=1.6, min_brightness=0.75, max_brightness=0.9, custom_material='default'):
         material_name = "CrystalMaterial" + material_name
         self.min_ior = min_ior
         self.max_ior = max_ior
         self.min_brightness = min_brightness
         self.max_brightness = max_brightness
-        super().__init__(material_name=material_name)
+        self.custom_material = custom_material
+        super().__init__(material_name=material_name,custom_material=custom_material)
 
     def shuffle_ior_and_brightness(self):
         """

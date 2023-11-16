@@ -148,21 +148,26 @@ class CrystalWellLight:
 
         if self.light_energy is not None:
             energy = self.light_energy
+        elif self.light_type == "SUN":
+            energy = 1
         else:
             energy = 10000.0 + np.random.normal(0.0, 1000.0)
-        bpy.ops.object.light_add(type=self.light_type,
-                                 radius=15,
-                                 location=location,
-                                 rotation=rotation)
-        bpy.context.object.name = "vcw_" + self.light_type + "_light"
-        bpy.context.object.data.energy = energy
-        bpy.context.object.data.color = (1.0, 1.0, 1.0)
+        if self.light_type == "NONE":
+            pass
+        else:
+            bpy.ops.object.light_add(type=self.light_type,
+                                     radius=15,
+                                     location=location,
+                                     rotation=rotation)
+            bpy.context.object.name = "vcw_" + self.light_type + "_light"
+            bpy.context.object.data.energy = energy
+            bpy.context.object.data.color = (1.0, 1.0, 1.0)
 
         # BOTTOM LIGHT:
         if self.use_bottom_light:
-            energy_bottom = 1000.0 + 500.0 * (random.random() - 0.5)
+            energy_bottom = 10000.0 + 500.0 * (random.random() - 0.5)
             bpy.ops.object.light_add(type="AREA",
-                                     radius=50,
+                                     radius=60,
                                      location=(0, 0, self.cw_depth + 1),
                                      rotation=(math.pi, 0.0, 0.0), )
 
@@ -213,7 +218,7 @@ class CrystalWellBuilder:
     def __init__(self, plane_length, cw_depth,
                  distributor,
                  material_name, material_min_ior, material_max_ior,
-                 material_min_brightness, material_max_brightness):
+                 material_min_brightness, material_max_brightness,custom_material='GLASS'):
 
         self.cw_depth = cw_depth  # == Plane position
 
@@ -236,7 +241,8 @@ class CrystalWellBuilder:
                                                          min_ior=material_min_ior,
                                                          max_ior=material_max_ior,
                                                          min_brightness=material_min_brightness,
-                                                         max_brightness=material_max_brightness)
+                                                         max_brightness=material_max_brightness,
+                                                         custom_material=custom_material)
 
         self.crystal_distributor = distributor
 

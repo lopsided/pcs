@@ -89,9 +89,9 @@ class CrystalWellSimulator:
                                                     random_translation_function=random_translation_function,
                                                     crystal_well_loader=crystal_well_loader,
                                                     cw_depth=settings["cw_depth"],
-                                                    # crystal_location=settings["crystal_location"],
-                                                    # crystal_scale=settings["crystal_scale"],
-                                                    # crystal_rotation=settings["crystal_rotation"]
+                                                    crystal_location=settings["crystal_location"],
+                                                    crystal_scale=settings["crystal_scale"],
+                                                    crystal_rotation=settings["crystal_rotation"]
                                                     )
 
         self.crystal_well_loader = crystal_well_loader
@@ -102,7 +102,8 @@ class CrystalWellSimulator:
                                           material_min_ior=settings["crystal_material_min_ior"],
                                           material_max_ior=settings["crystal_material_max_ior"],
                                           material_min_brightness=settings["crystal_material_min_brightness"],
-                                          material_max_brightness=settings["crystal_material_max_brightness"])
+                                          material_max_brightness=settings["crystal_material_max_brightness"],
+                                          custom_material=settings["custom_material_name"])
 
         self.renderer = CrystalWellRenderer(number_frames=settings["n_frames"],
                                             number_threads=settings["number_threads"],

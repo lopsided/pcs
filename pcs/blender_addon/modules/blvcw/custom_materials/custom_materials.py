@@ -3,7 +3,7 @@
 import importlib
 # from . import default
 
-def material_loader(custom_material="default"):
+def material_loader(custom_material="plastic"):
     custom_material = custom_material
     print("Custom_material",custom_material)
     # try:
