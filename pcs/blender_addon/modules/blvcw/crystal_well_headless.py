@@ -8,7 +8,6 @@ import sys
 from blvcw.crystal_well_components import CrystalWellSettings, CrystalWellLoader
 from blvcw.crystal_well_simulation import CrystalWellSimulator
 
-
 class __CrystalWellHeadlessExecution:
     """
     Performs headless execution with a provided settings file.
@@ -24,9 +23,7 @@ class __CrystalWellHeadlessExecution:
     def perform_headless_execution(self):
         crystal_well_settings = CrystalWellSettings()
         crystal_well_settings.from_json(self.settings_file_path)
-
         settings_dict = crystal_well_settings.settings_dict
-
         crystal_well_loader = CrystalWellLoader(crystal_object=settings_dict["crystal_object"],
                                                 remesh_mode=settings_dict["remesh_mode"],
                                                 remesh_octree_depth=settings_dict["remesh_octree_depth"])
