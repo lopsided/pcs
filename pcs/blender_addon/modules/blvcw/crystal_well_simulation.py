@@ -18,7 +18,6 @@ class CrystalWellSimulator:
     def __init__(self, crystal_well_settings, crystal_well_loader):
 
         settings = crystal_well_settings.settings_dict
-
         self.name = "CrystalWell"
         self.number_of_images = settings["number_images"]
         self.crystal_well_loader = crystal_well_loader
@@ -41,7 +40,8 @@ class CrystalWellSimulator:
 
         self.camera = CrystalWellCamera(field_of_view=settings["field_of_view"],
                                         camera_distance=settings["camera_distance"],
-                                        cw_depth=settings["cw_depth"])
+                                        cw_depth=settings["cw_depth"],)
+
         self.light = CrystalWellLight(light_type=settings["light_type"],
                                       light_angle_min=settings["light_angle_min"],
                                       light_angle_max=settings["light_angle_max"],
@@ -51,7 +51,8 @@ class CrystalWellSimulator:
                                       plane_length=plane_length,
                                       use_bottom_light=settings["use_bottom_light"],
                                       camera_distance=settings["camera_distance"],
-                                      cw_depth=settings["cw_depth"])
+                                      cw_depth=settings["cw_depth"],
+                                      transmission_mode=settings['transmission_mode'])
         if settings["distributor"] == "RANDOM":
             self.distributor = CrystalWellRandomDistributor(number_crystals=number_crystals,
                                                             scaling_crystals_average=settings[
@@ -103,14 +104,18 @@ class CrystalWellSimulator:
                                           material_max_ior=settings["crystal_material_max_ior"],
                                           material_min_brightness=settings["crystal_material_min_brightness"],
                                           material_max_brightness=settings["crystal_material_max_brightness"],
-                                          custom_material=settings["custom_material_name"])
+                                          material_min_roughness=settings["crystal_material_min_roughness"],
+                                          material_max_roughness=settings["crystal_material_max_roughness"],
+                                          custom_material=settings["custom_material_name"],
+                                          transmission_mode=settings['transmission_mode'])
 
         self.renderer = CrystalWellRenderer(number_frames=settings["n_frames"],
                                             number_threads=settings["number_threads"],
                                             res_x=settings["res_x"],
                                             res_y=settings["res_y"],
                                             output_path=settings["output_path"],
-                                            device=settings["device"])
+                                            device=settings["device"],
+                                            generate_blender=settings["generate_blender"])
 
         self.json_writer = CrystalWellWriter(output_path=settings["output_path"])
 
@@ -164,6 +169,7 @@ class CrystalWellSimulator:
                                             rotations=builder_params["rotations"],
                                             brightnesses=builder_params["brightnesses"],
                                             iors=builder_params["iors"],
+                                            roughness=builder_params["roughness"],
                                             light_params=light_params)
 
     def _setup_crystal_well(self):

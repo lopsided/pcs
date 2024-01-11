@@ -6,8 +6,9 @@ import random
 
 import numpy as np
 from types import SimpleNamespace
-from blvcw.crystal_well_material import CrystalMaterialGlass, PlaneMaterial, CustomMaterial
-
+from blvcw.crystal_well_material import CrystalMaterialGlass, PlaneMaterial, CustomMaterial, CrystalMaterialGlass_Static
+import mathutils
+  
 
 class CrystalWellLoader:
     """
@@ -113,7 +114,7 @@ class CrystalWellLight:
     def __init__(self, light_type="AREA", light_angle_min=0, light_angle_max=0,
                  light_location=None, light_rotation=None, light_energy=None,
                  plane_length=15.0, use_bottom_light=True,
-                 camera_distance=15.0, cw_depth=-10.0):
+                 camera_distance=15.0, cw_depth=-10.0,transmission_mode=False):
         self.light_type = light_type
         self.light_angle_min = light_angle_min
         self.light_angle_max = light_angle_max
@@ -124,54 +125,79 @@ class CrystalWellLight:
         self.use_bottom_light = use_bottom_light
         self.cw_depth = cw_depth
         self.light_radius_total = abs(camera_distance) + abs(cw_depth)
+        self.transmission_mode = transmission_mode
 
     def setup(self):
-        light_angle = np.deg2rad(np.random.uniform(self.light_angle_min, self.light_angle_max))
-
-        if self.light_location is not None:
-            assert len(self.light_location) == 3, "light_location must be a tuple of length 3"
-            assert self.light_rotation is not None, "light_rotation must be set if light_location is set"
-            assert len(self.light_rotation) == 3, "light_rotation must be a tuple of length 3"
-            light_x, light_y, light_z = self.light_location
-            rotation = self.light_rotation
-        else:
-            random_factor_x, random_factor_y = (np.random.choice([-1, 1]), np.random.choice([-1, 1]))
-            light_x = self.light_radius_total * math.sin(light_angle) * random_factor_x
-            light_y = self.light_radius_total * math.sin(light_angle) * random_factor_y
-            light_z = self.light_radius_total * math.cos(light_angle) - abs(self.cw_depth)
-            rotation = (-1 * random_factor_y * light_angle,
-                        random_factor_x * light_angle,
-                        0.0)
-
-        # TOP-DOWN LIGHT:
-        location = (light_x, light_y, light_z)
-
-        if self.light_energy is not None:
-            energy = self.light_energy
-        elif self.light_type == "SUN":
-            energy = 1
-        else:
-            energy = 10000.0 + np.random.normal(0.0, 1000.0)
-        if self.light_type != "NONE":
-            bpy.ops.object.light_add(type=self.light_type,
-                                     radius=15,
-                                     location=location,
-                                     rotation=rotation)
-            bpy.context.object.name = "vcw_" + self.light_type + "_light"
-            bpy.context.object.data.energy = energy
-            bpy.context.object.data.color = (1.0, 1.0, 1.0)
-
-        # BOTTOM LIGHT:
-        if self.use_bottom_light:
-            energy_bottom = 10000.0 + 500.0 * (random.random() - 0.5)
+        
+        
+        if self.transmission_mode:
+            # transmisson mode only has bottom light
+            print("Using transmission mode for lighting")
+            # not sure what to doo with these extra parameters
+            light_angle = 0
+            light_x = 0
+            light_y = 0
+            light_z = 0
+            rotation = 0
+            
+            energy = 100000 + 5000.0 * (random.random() - 0.5)
             bpy.ops.object.light_add(type="AREA",
-                                     radius=60,
-                                     location=(0, 0, self.cw_depth + 1),
-                                     rotation=(math.pi, 0.0, 0.0), )
+                                    radius=100,#0.08,
+                                    location=(0, 0, self.cw_depth + self.cw_depth/4),
+                                    rotation=(math.pi, 0.0, 0.0), )
 
             bpy.context.object.name = "vcw_" + "AREA" + "_light_bottom"
-            bpy.context.object.data.energy = energy_bottom
-            bpy.context.object.data.color = (1.0, 1.0, 1.0)
+            bpy.context.object.data.energy = energy
+            bpy.context.object.data.color = mathutils.Color((0.700, 0.711, 0.534))
+        else:
+            light_angle = np.deg2rad(np.random.uniform(self.light_angle_min, self.light_angle_max))
+
+            if self.light_location is not None:
+                assert len(self.light_location) == 3, "light_location must be a tuple of length 3"
+                assert self.light_rotation is not None, "light_rotation must be set if light_location is set"
+                assert len(self.light_rotation) == 3, "light_rotation must be a tuple of length 3"
+                light_x, light_y, light_z = self.light_location
+                rotation = self.light_rotation
+            else:
+                random_factor_x, random_factor_y = (np.random.choice([-1, 1]), np.random.choice([-1, 1]))
+                light_x = self.light_radius_total * math.sin(light_angle) * random_factor_x
+                light_y = self.light_radius_total * math.sin(light_angle) * random_factor_y
+                light_z = self.light_radius_total * math.cos(light_angle) - abs(self.cw_depth)
+                rotation = (-1 * random_factor_y * light_angle,
+                            random_factor_x * light_angle,
+                            0.0)
+
+            # TOP-DOWN LIGHT:
+            location = (light_x, light_y, light_z)
+
+            if self.light_energy is not None:
+                energy = self.light_energy
+            elif self.light_type == "SUN":
+                energy = 1
+            else:
+                energy = 10000.0 + np.random.normal(0.0, 1000.0)
+            if self.light_type == "NONE":
+                pass
+            else:
+                bpy.ops.object.light_add(type=self.light_type,
+                                        radius=15,
+                                        location=location,
+                                        rotation=rotation)
+                bpy.context.object.name = "vcw_" + self.light_type + "_light"
+                bpy.context.object.data.energy = energy
+                bpy.context.object.data.color = (1.0, 1.0, 1.0)
+
+            # BOTTOM LIGHT:
+            if self.use_bottom_light:
+                energy_bottom = 10000.0 + 500.0 * (random.random() - 0.5)
+                bpy.ops.object.light_add(type="AREA",
+                                        radius=60,
+                                        location=(0, 0, self.cw_depth + 1),
+                                        rotation=(math.pi, 0.0, 0.0), )
+
+                bpy.context.object.name = "vcw_" + "AREA" + "_light_bottom"
+                bpy.context.object.data.energy = energy_bottom
+                bpy.context.object.data.color = (1.0, 1.0, 1.0)
 
         params = {
             "angle": light_angle,
@@ -190,22 +216,35 @@ class CrystalWellCamera:
     VCW camera component placed above the plane.
     It is positioned at the same position for every image, which mimics the real-world situation.
     """
-    def __init__(self, field_of_view=1.5708 / 2, camera_distance=15.0, cw_depth=-10.):
+    def __init__(self, field_of_view=1.5708 / 2, camera_distance=15.0, cw_depth=-10.,transmission_mode=True):
         self.field_of_view = field_of_view
         self.camera_distance = camera_distance
         self.cw_depth = cw_depth
+        self.transmission_mode = transmission_mode
 
     def setup(self):
-        bpy.ops.object.camera_add(location=(0.0, 0.0, self.camera_distance), rotation=(0.0, 0.0, 0.0))
-        bpy.context.object.name = "vcw_camera"
-        bpy.context.object.data.lens_unit = "FOV"
-        bpy.context.object.data.dof.use_dof = True
-        bpy.context.object.data.dof.focus_distance = self.camera_distance - (
-                self.cw_depth / 2.0)  # center at focus point (half of cw depth)
-        bpy.context.object.data.dof.aperture_fstop = 0.1  # smaller -> more blur
-        bpy.context.object.data.dof.focus_distance = self.camera_distance - (self.cw_depth / 2.0)
-        bpy.context.object.data.angle = self.field_of_view
-        bpy.context.scene.camera = bpy.context.object
+        if self.transmission_mode:
+            bpy.ops.object.camera_add(location=(0.0, 0.0, self.camera_distance), rotation=(0.0, 0.0, 0.0))
+            bpy.context.object.name = "vcw_camera"
+            bpy.context.object.data.lens_unit = "MILLIMETERS"
+            bpy.context.object.data.lens = 75
+            bpy.context.object.data.clip_start = 1e-06
+            bpy.context.object.data.clip_end = 1000
+            # bpy.context.object.data.type = 'ORTHO'
+            # bpy.context.object.data.ortho_scale = 1#0.014
+            # no depth of field
+            bpy.context.scene.camera = bpy.context.object
+        else:
+            bpy.ops.object.camera_add(location=(0.0, 0.0, self.camera_distance), rotation=(0.0, 0.0, 0.0))
+            bpy.context.object.name = "vcw_camera"
+            bpy.context.object.data.lens_unit = "FOV"
+            bpy.context.object.data.dof.use_dof = True
+            bpy.context.object.data.dof.focus_distance = self.camera_distance - (
+                    self.cw_depth / 2.0)  # center at focus point (half of cw depth)
+            bpy.context.object.data.dof.aperture_fstop = 0.1  # smaller -> more blur
+            bpy.context.object.data.dof.focus_distance = self.camera_distance - (self.cw_depth / 2.0)
+            bpy.context.object.data.angle = self.field_of_view
+            bpy.context.scene.camera = bpy.context.object
 
 
 class CrystalWellBuilder:
@@ -216,8 +255,10 @@ class CrystalWellBuilder:
     def __init__(self, plane_length, cw_depth,
                  distributor,
                  material_name, material_min_ior, material_max_ior,
-                 material_min_brightness, material_max_brightness, custom_material='GLASS'):
+                 material_min_roughness, material_max_roughness,
+                 material_min_brightness, material_max_brightness,custom_material='GLASS',transmission_mode=False):
 
+        self.transmission_mode = transmission_mode
         self.cw_depth = cw_depth  # == Plane position
 
         self.plane_length = plane_length
@@ -233,7 +274,9 @@ class CrystalWellBuilder:
                                                          min_ior=material_min_ior,
                                                          max_ior=material_max_ior,
                                                          min_brightness=material_min_brightness,
-                                                         max_brightness=material_max_brightness)
+                                                         max_brightness=material_max_brightness,
+                                                         min_rough=material_min_roughness,
+                                                         max_rough=material_max_roughness)
         else:
             self.crystal_material = CustomMaterial(material_name=material_name,
                                                    min_ior=material_min_ior,
@@ -245,33 +288,44 @@ class CrystalWellBuilder:
         self.crystal_distributor = distributor
 
     def setup(self):
-        self._setup_plane()
+        
+        plane = self._setup_plane()
+        if self.transmission_mode:
+            #second plane for glass
+            # self.glass_material = CrystalMaterialGlass_Static()
+            self.glass_material = CustomMaterial(material_name="CUSTOM",
+                                                custom_material="crystal")
+            self.glass_material.apply(blender_object=plane)
         return self._setup_crystals()  # Returns annotations for Coco Dataset
 
     def _setup_plane(self):
         bpy.ops.mesh.primitive_plane_add(size=self.plane_length,
-                                         enter_editmode=False,
-                                         location=(0, 0, self.cw_depth))
+                                        enter_editmode=False,
+                                        location=(0, 0, self.cw_depth))
         plane = bpy.context.object
         plane.name = "vcw_plane"
+        return plane
 
     def _setup_crystals(self):
         brightnesses = []
         iors = []
+        roughness = []
         number_crystals = 0
         for crystal in self.crystal_distributor.get_crystals():
             self.crystal_material.shuffle_ior_and_brightness()
+            self.crystal_material.shuffle_roughness()
             self.crystal_material.apply(blender_object=crystal)
-            if self.crystal_material.material_name in ["CrystalMaterialCUSTOM"]:
+            
+            if self.crystal_material.material_name in ['CrystalMaterialCUSTOM']:
                 # these need fixing if important!
                 brightnesses.append(0)
                 iors.append(0)
+                roughness.append(0)
             else:
                 brightnesses.append(self.crystal_material.properties["ShaderNodeBsdfGlass"]["0"][0])
                 iors.append(self.crystal_material.properties["ShaderNodeBsdfGlass"]["2"])
+                roughness.append(self.crystal_material.properties["ShaderNodeBsdfGlass"]["1"])
             number_crystals += 1
-
-        print("Generated " + str(number_crystals) + " crystals!")
 
         return {
             "annotations": self.crystal_distributor.get_annotations(),
@@ -279,15 +333,22 @@ class CrystalWellBuilder:
             "scales": self.crystal_distributor.get_scales(),
             "rotations": self.crystal_distributor.get_rotations(),
             "brightnesses": brightnesses,
-            "iors": iors
+            "iors": iors,
+            "roughness": roughness
         }
-
+    
+    def _set_background(self):
+        world = bpy.data.worlds['World']
+        world.use_nodes = True
+        bg = world.node_tree.nodes['Background']
+        bg.inputs[0].default_value[:3] = (0.700, 0.711, 0.534)
+        bg.inputs[1].default_value = 1.0
 
 class CrystalWellRenderer:
     """
     VCW component that handles the actual rendering of images. Values for the renderer are hard-coded.
     """
-    def __init__(self, number_frames, number_threads, res_x, res_y, output_path, device="CPU"):
+    def __init__(self, number_frames, number_threads, res_x, res_y, output_path, device="CPU", generate_blender=False):
         self.number_frames = number_frames
         self.number_threads = number_threads
         self.res_x = res_x
@@ -295,6 +356,7 @@ class CrystalWellRenderer:
         self.output_path = output_path
         assert device in ["CPU", "GPU"]
         self.device = device
+        self.generate_blender = generate_blender
 
     def setup(self):
         scene = bpy.context.scene
@@ -315,6 +377,9 @@ class CrystalWellRenderer:
 
         scene.render.resolution_x = self.res_x
         scene.render.resolution_y = self.res_y
+        
+
+        # set background colour
 
         if self.device == 'GPU':
             cycles_prefs = bpy.context.preferences.addons["cycles"].preferences
@@ -332,6 +397,11 @@ class CrystalWellRenderer:
 
         print("Rendering image", image_index_str)
         bpy.ops.render.render(write_still=True)
+        
+        if self.generate_blender:
+            filepath = os.path.join(self.output_path,f"{image_index_str}.blend")
+            bpy.ops.wm.save_as_mainfile(filepath=filepath)
+        
         return image_index_str + ".png"
 
 
@@ -344,7 +414,7 @@ class CrystalWellWriter:
         self.output_path = output_path
 
     def write_json(self, image_name, polygons, locations, scales, rotations,
-                   brightnesses=None, iors=None, light_params=None):
+                   brightnesses=None, iors=None, light_params=None, roughness=None):
         data = {
             "segmentation": polygons,
             "crystals": {
@@ -354,7 +424,8 @@ class CrystalWellWriter:
             },
             "materials": {
                 "brightnesses": brightnesses,
-                "iors": iors
+                "iors": iors,
+                "roughness": roughness
             },
             "light": light_params
         }
@@ -384,10 +455,13 @@ class CrystalWellSettings:
                  crystal_object="", crystal_import_path="", number_variants=1,
                  crystal_material_name="GLASS", crystal_material_min_ior=1.1, crystal_material_max_ior=1.6,
                  crystal_material_min_brightness=0.75, crystal_material_max_brightness=0.9,
+                 crystal_material_min_roughness=0.0, crystal_material_max_roughness=0.4,
                  light_type="AREA", light_angle_min=0, light_angle_max=0, use_bottom_light=True,
                  light_location=None, light_rotation=None, light_energy=None,
                  remesh_mode="NONE", remesh_octree_depth=4,
                  number_images=1,
+                 custom_material_name = '',
+                 transmission_mode = True,
                  ):
         self.settings_dict = {
             "number_threads": number_threads,
@@ -422,6 +496,8 @@ class CrystalWellSettings:
             "crystal_material_max_ior": crystal_material_max_ior,
             "crystal_material_min_brightness": crystal_material_min_brightness,
             "crystal_material_max_brightness": crystal_material_max_brightness,
+            "crystal_material_min_roughness": crystal_material_min_roughness,
+            "crystal_material_max_roughness": crystal_material_max_roughness,
             "light_type": light_type,
             "light_angle_min": light_angle_min,
             "light_angle_max": light_angle_max,
@@ -435,7 +511,9 @@ class CrystalWellSettings:
             "output_path": output_path,
             "remesh_mode": remesh_mode,
             "remesh_octree_depth": remesh_octree_depth,
-            "number_images": number_images
+            "number_images": number_images,
+            "transmission_mode": transmission_mode,
+            "custom_material_name": custom_material_name
         }
 
     def print_settings(self):
