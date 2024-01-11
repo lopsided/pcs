@@ -8,6 +8,7 @@ import sys
 from blvcw.crystal_well_components import CrystalWellSettings, CrystalWellLoader
 from blvcw.crystal_well_simulation import CrystalWellSimulator
 
+
 class __CrystalWellHeadlessExecution:
     """
     Performs headless execution with a provided settings file.

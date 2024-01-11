@@ -1,7 +1,6 @@
 import sys
 import bpy
 import bpy_extras
-from bpy_extras.object_utils import world_to_camera_view
 import math
 import random
 import cv2
@@ -521,7 +520,6 @@ class VCWSimpleDistributor(CrystalWellDistributor):
 
     def _to_camera_coords(self, crystal):
         # inspired by bpy_extras.object_utils.world_to_camera_view
-        
         bpy.context.view_layer.update()
         co_local = [self.inv_mat @ (crystal.matrix_world @ v.co) for v in crystal.data.vertices]
         # frames = [[-(v / (v.z / -co.z)) for v in self.frame] for co in co_local]
@@ -662,7 +660,6 @@ class VCWSimpleDistributor(CrystalWellDistributor):
 
 
     def _place_crystal(self, crystal):
-        
         # Place the crystal at a fixed location, scale and orientation
         if self.crystal_location is not None:
             assert len(self.crystal_location) == 3, "crystal_location must be a 3-tuple"
@@ -676,6 +673,7 @@ class VCWSimpleDistributor(CrystalWellDistributor):
             cam_coords = self._to_camera_coords(crystal)  # Ignore if this is out of bounds
 
             return crystal, cam_coords
+
         elif (self.crystal_scale is not None) or (self.crystal_rotation is not None):
             raise ValueError("crystal_scale and crystal_rotation require crystal_location to be set")
 
@@ -688,7 +686,7 @@ class VCWSimpleDistributor(CrystalWellDistributor):
                 translation = (0, 0, self.cw_depth / 2)
             else:
                 translation = self.random_translation_function()
-            crystal.scale = (1,1,1)
+            crystal.scale = (1, 1, 1)
             crystal.location = Vector((translation[0], translation[1], translation[2]))
             crystal.rotation_euler = (random.random() * 2 * math.pi, random.random() * 2 * math.pi, random.random() * 2 * math.pi)
 
@@ -701,7 +699,6 @@ class VCWSimpleDistributor(CrystalWellDistributor):
             if res is None:
                 n_tries += 1
                 continue
-
 
             cam_coords = self._to_camera_coords(crystal)
             if not self._in_bounds(crystal, cam_coords):

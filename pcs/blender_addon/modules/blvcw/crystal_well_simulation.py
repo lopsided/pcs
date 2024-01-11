@@ -40,19 +40,20 @@ class CrystalWellSimulator:
 
         self.camera = CrystalWellCamera(field_of_view=settings["field_of_view"],
                                         camera_distance=settings["camera_distance"],
-                                        cw_depth=settings["cw_depth"],)
+                                        cw_depth=settings["cw_depth"])
 
         self.light = CrystalWellLight(light_type=settings["light_type"],
                                       light_angle_min=settings["light_angle_min"],
                                       light_angle_max=settings["light_angle_max"],
-                                    #   light_location=settings["light_location"],
-                                    #   light_rotation=settings["light_rotation"],
-                                    #   light_energy=settings["light_energy"],
+                                      light_location=settings["light_location"],
+                                      light_rotation=settings["light_rotation"],
+                                      light_energy=settings["light_energy"],
                                       plane_length=plane_length,
                                       use_bottom_light=settings["use_bottom_light"],
                                       camera_distance=settings["camera_distance"],
                                       cw_depth=settings["cw_depth"],
                                       transmission_mode=settings['transmission_mode'])
+
         if settings["distributor"] == "RANDOM":
             self.distributor = CrystalWellRandomDistributor(number_crystals=number_crystals,
                                                             scaling_crystals_average=settings[
@@ -169,7 +170,7 @@ class CrystalWellSimulator:
                                             rotations=builder_params["rotations"],
                                             brightnesses=builder_params["brightnesses"],
                                             iors=builder_params["iors"],
-                                            roughness=builder_params["roughness"],
+                                            roughnesses=builder_params["roughnesses"],
                                             light_params=light_params)
 
     def _setup_crystal_well(self):

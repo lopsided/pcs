@@ -1,7 +1,7 @@
 import bpy
 import random
 from abc import ABC, abstractmethod
-import blvcw.custom_materials.material_loader as custom_material_loader
+from blvcw.custom_materials import material_loader as custom_material_loader
 
 class _CrystalMaterial(ABC):
     """
@@ -39,10 +39,9 @@ class _CrystalMaterial(ABC):
         and setting the according values
         """
         if self.material_name not in bpy.data.materials:
-            print("material_name",self.material_name)
-            if self.material_name in ['CrystalMaterialCUSTOM']:
+            print("Loading material:", self.material_name)
+            if self.material_name == "CrystalMaterialCUSTOM":
                 self.material = self.material_loader.load()
-                print("self.material",self.material)
             else:
                 self.material = bpy.data.materials.new(self.material_name)
                 self.material.use_nodes = True
@@ -89,41 +88,32 @@ class _CrystalMaterial(ABC):
 
 
 class CrystalMaterialGlass(_CrystalMaterial):
-    def __init__(self, material_name="GLASS", min_ior=1.1, max_ior=1.6, min_brightness=0.75, max_brightness=0.9, min_rough=0, max_rough=0.3):
+    def __init__(self, material_name="GLASS", min_ior=1.1, max_ior=1.6, min_brightness=0.75, max_brightness=0.9, min_roughness=0, max_roughness=0.3):
         material_name = "CrystalMaterial" + material_name
         self.min_ior = min_ior
         self.max_ior = max_ior
-        self.min_rough = min_rough
-        self.max_rough = max_rough
         self.min_brightness = min_brightness
         self.max_brightness = max_brightness
+        self.min_roughness = min_roughness
+        self.max_roughness = max_roughness
         super().__init__(material_name=material_name)
 
-    def shuffle_ior_and_brightness(self):
+    def shuffle_properties(self):
         """
-        Draws a new value for ior between self.min_ior and self.max_ior.
-        Also draws a new value for brightness between self.min_brightness and self.max_brightness.
+        Draws new values for the ior, brightness and roughness properties.
         Brightness is set by manipulating the color value of the Glass BSDF Node.
         """
         if self.shuffle:
             ior = random.uniform(self.min_ior, self.max_ior)
             brightness = random.uniform(self.min_brightness, self.max_brightness)
+            roughness = random.uniform(self.min_roughness, self.max_roughness)
             if "ShaderNodeBsdfGlass" in self.properties.keys():
                 self.properties["ShaderNodeBsdfGlass"]["0"] = (brightness, brightness, brightness, 1)
-                self.properties["ShaderNodeBsdfGlass"]["1"] = 0.08 #0  # roughness
+                self.properties["ShaderNodeBsdfGlass"]["1"] = roughness
                 self.properties["ShaderNodeBsdfGlass"]["2"] = ior
-                self._duplicate_with_new_number()
-
-    
-    def shuffle_roughness(self):
-        roughness = random.uniform(self.min_rough, self.max_rough)
-        if "ShaderNodeBsdfGlass" in self.properties.keys():
-            self.properties["ShaderNodeBsdfGlass"]["1"] = roughness
+            elif "Principled BSDF" in self.properties.keys():
+                self.properties["Principled BSDF"]["7"] = roughness
             self._duplicate_with_new_number()
-        elif "Principled BSDF" in self.properties.keys():
-            self.properties["Principled BSDF"]["7"] = roughness
-            self._duplicate_with_new_number()
-    
 
 
 class PlaneMaterial(_CrystalMaterial):
@@ -146,12 +136,11 @@ class CustomMaterial(_CrystalMaterial):
         self.min_brightness = min_brightness
         self.max_brightness = max_brightness
         self.custom_material = custom_material
-        super().__init__(material_name=material_name,custom_material=custom_material)
+        super().__init__(material_name=material_name, custom_material=custom_material)
 
-    def shuffle_ior_and_brightness(self):
+    def shuffle_properties(self):
         """
-        Draws a new value for ior between self.min_ior and self.max_ior.
-        Also draws a new value for brightness between self.min_brightness and self.max_brightness.
+        Draws new values for the ior and brightness properties.
         Brightness is set by manipulating the color value of the Glass BSDF Node.
         """
         if self.shuffle:
@@ -162,15 +151,6 @@ class CustomMaterial(_CrystalMaterial):
                 self.properties["ShaderNodeBsdfGlass"]["1"] = 0  # roughness
                 self.properties["ShaderNodeBsdfGlass"]["2"] = ior
                 self._duplicate_with_new_number()
-
-    def shuffle_roughness(self):
-        roughness = random.uniform(self.min_rough, self.max_rough)
-        if "ShaderNodeBsdfGlass" in self.properties.keys():
-            self.properties["ShaderNodeBsdfGlass"]["1"] = roughness
-            self._duplicate_with_new_number()
-        elif "Principled BSDF" in self.properties.keys():
-            self.properties["Principled BSDF"]["7"] = roughness
-            self._duplicate_with_new_number()
 
 
 class MaterialsContainer:
@@ -413,10 +393,9 @@ class CrystalMaterialGlass_Static(_CrystalMaterial):
             self.properties["ShaderNodeBsdfGlass"]["2"] = self.ior
             self._duplicate_with_new_number()
 
-    def shuffle_ior_and_brightness(self):
+    def shuffle_properties(self):
         """
-        Draws a new value for ior between self.min_ior and self.max_ior.
-        Also draws a new value for brightness between self.min_brightness and self.max_brightness.
+        Draws new values for the ior and brightness properties.
         Brightness is set by manipulating the color value of the Glass BSDF Node.
         """
         if self.shuffle:
@@ -427,14 +406,3 @@ class CrystalMaterialGlass_Static(_CrystalMaterial):
                 self.properties["ShaderNodeBsdfGlass"]["1"] = 0  # roughness
                 self.properties["ShaderNodeBsdfGlass"]["2"] = ior
                 self._duplicate_with_new_number()
-
-    """
-    def shuffle_roughness(self):
-        roughness = random.uniform(0.15, 0.65)
-        if "ShaderNodeBsdfGlass" in self.properties.keys():
-            self.properties["ShaderNodeBsdfGlass"]["1"] = roughness
-            self._duplicate_with_new_number()
-        elif "Principled BSDF" in self.properties.keys():
-            self.properties["Principled BSDF"]["7"] = roughness
-            self._duplicate_with_new_number()
-    """
