@@ -1,19 +1,19 @@
 import bpy
 import random
 from abc import ABC, abstractmethod
-import blvcw.custom_materials as custom
+import blvcw.custom_materials.material_loader as custom_material_loader
 
 class _CrystalMaterial(ABC):
     """
     Abstract class to handle different classes of material (Crystal / Plane).
     """
     @abstractmethod
-    def __init__(self, material_name,custom_material="default"):
+    def __init__(self, material_name, custom_material="default"):
         self.material_name = material_name
         self.base_name = material_name
-        if material_name in ['CrystalMaterialCUSTOM']:
+        if material_name == 'CrystalMaterialCUSTOM':
             # load custom material
-            self.material_loader = custom.material_loader(custom_material)
+            self.material_loader = custom_material_loader(custom_material)
             self.properties, self.color_ramp, self.links = [], [], []
         else:
             self.properties, self.color_ramp, self.links = MaterialsContainer.get_material(name=material_name)
@@ -137,7 +137,7 @@ class PlaneMaterial(_CrystalMaterial):
     """
 
 class CustomMaterial(_CrystalMaterial):
-    def __init__(self, material_name="CUSTOM", min_ior=1.1, max_ior=1.6, min_brightness=0.75, max_brightness=0.9, custom_material='default'):
+    def __init__(self, material_name="CUSTOM", min_ior=1.1, max_ior=1.6, min_brightness=0.75, max_brightness=0.9, custom_material="default"):
         material_name = "CrystalMaterial" + material_name
         self.min_ior = min_ior
         self.max_ior = max_ior

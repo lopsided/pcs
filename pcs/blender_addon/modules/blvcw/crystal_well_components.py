@@ -152,9 +152,7 @@ class CrystalWellLight:
             energy = 1
         else:
             energy = 10000.0 + np.random.normal(0.0, 1000.0)
-        if self.light_type == "NONE":
-            pass
-        else:
+        if self.light_type != "NONE":
             bpy.ops.object.light_add(type=self.light_type,
                                      radius=15,
                                      location=location,
@@ -218,7 +216,7 @@ class CrystalWellBuilder:
     def __init__(self, plane_length, cw_depth,
                  distributor,
                  material_name, material_min_ior, material_max_ior,
-                 material_min_brightness, material_max_brightness,custom_material='GLASS'):
+                 material_min_brightness, material_max_brightness, custom_material='GLASS'):
 
         self.cw_depth = cw_depth  # == Plane position
 
@@ -230,7 +228,7 @@ class CrystalWellBuilder:
             self.crystal_material = SimpleNamespace(apply=lambda blender_object: blender_object.data.materials.clear(),
                                                     shuffle_ior_and_brightness=lambda *args: None,
                                                     shuffle_roughness=lambda *args: None)
-        elif material_name == 'GLASS':
+        elif material_name == "GLASS":
             self.crystal_material = CrystalMaterialGlass(material_name=material_name,
                                                          min_ior=material_min_ior,
                                                          max_ior=material_max_ior,
@@ -238,11 +236,11 @@ class CrystalWellBuilder:
                                                          max_brightness=material_max_brightness)
         else:
             self.crystal_material = CustomMaterial(material_name=material_name,
-                                                         min_ior=material_min_ior,
-                                                         max_ior=material_max_ior,
-                                                         min_brightness=material_min_brightness,
-                                                         max_brightness=material_max_brightness,
-                                                         custom_material=custom_material)
+                                                   min_ior=material_min_ior,
+                                                   max_ior=material_max_ior,
+                                                   min_brightness=material_min_brightness,
+                                                   max_brightness=material_max_brightness,
+                                                   custom_material=custom_material)
 
         self.crystal_distributor = distributor
 
@@ -264,8 +262,7 @@ class CrystalWellBuilder:
         for crystal in self.crystal_distributor.get_crystals():
             self.crystal_material.shuffle_ior_and_brightness()
             self.crystal_material.apply(blender_object=crystal)
-            print("self.crystal_material.material_name",self.crystal_material.material_name)
-            if self.crystal_material.material_name in ['CrystalMaterialCUSTOM']:
+            if self.crystal_material.material_name in ["CrystalMaterialCUSTOM"]:
                 # these need fixing if important!
                 brightnesses.append(0)
                 iors.append(0)
