@@ -494,7 +494,7 @@ class VCWSimpleDistributor(CrystalWellDistributor):
 
     def __init__(self, total_crystal_area_min=0.05, total_crystal_area_max=0.5, res_x=384, res_y=384,
                  subdivide_edges=100, smooth_shading=True, random_translation_function=None, crystal_well_loader=None,
-                 cw_depth=None, crystal_location=None, crystal_scale=None, crystal_rotation=None):
+                 cw_depth=None, optimize_rotation=True, crystal_location=None, crystal_scale=None, crystal_rotation=None):
 
         super().__init__()
 
@@ -512,6 +512,8 @@ class VCWSimpleDistributor(CrystalWellDistributor):
         self.smooth_shading = smooth_shading
 
         self.cw_depth = cw_depth  # camera data is not supposed to change during distribution of crystals and rendering
+
+        self.optimize_rotation = optimize_rotation  # Whether or not to optimise the random rotation to fit constraints
 
         # Used to fix values for validation and testing
         self.crystal_location = crystal_location
@@ -579,8 +581,8 @@ class VCWSimpleDistributor(CrystalWellDistributor):
     def _l1_area(self, x, target_area, crystal):
         crystal.scale = (x[0], x[0], x[0])
         crystal.location = Vector((x[1], x[2], x[3]))
-        crystal.rotation_euler = (x[4], x[5], x[6])
-
+        if self.optimize_rotation:
+            crystal.rotation_euler = (x[4], x[5], x[6])
         width, height, _ = self._get_min_area_rect(crystal)
         area = width * height / self.image_area
         loss_area = (area - target_area)**2

@@ -91,6 +91,7 @@ class CrystalWellSimulator:
                                                     random_translation_function=random_translation_function,
                                                     crystal_well_loader=crystal_well_loader,
                                                     cw_depth=settings["cw_depth"],
+                                                    optimize_rotation=settings["optimize_rotation"],
                                                     crystal_location=settings["crystal_location"],
                                                     crystal_scale=settings["crystal_scale"],
                                                     crystal_rotation=settings["crystal_rotation"]
